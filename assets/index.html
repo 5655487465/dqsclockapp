@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Clock</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+        }
+        
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #000000;
+            color: white;
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .side-nav {
+            width: 80px;
+            background: #1f1f1f;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 0;
+            z-index: 1000;
+        }
+
+        .nav-item {
+            color: #757575;
+            text-align: center;
+            cursor: pointer;
+            padding: 16px 8px;
+            width: 100%;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        .nav-item.active {
+            color: #1a73e8;
+            background: rgba(26, 115, 232, 0.1);
+        }
+
+        .nav-item i {
+            font-size: 1.8rem;
+            margin-bottom: 4px;
+        }
+
+        .nav-item span {
+            font-size: 0.7rem;
+        }
+
+        .content-area {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .main-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            transform: translateY(100%);
+            opacity: 0;
+            transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1),
+                        opacity 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+            pointer-events: none;
+        }
+
+        .main-container.active {
+            transform: translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .main-container.previous {
+            transform: translateY(-100%);
+            opacity: 0;
+        }
+
+        .clock-display {
+            font-size: 5rem;
+            font-weight: 300;
+            text-align: center;
+            margin: 40px 0;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        input {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 4px;
+            color: white;
+            padding: 12px;
+            font-size: 1.2rem;
+            width: 70px;
+            text-align: center;
+        }
+
+        button {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 24px;
+            padding: 12px 24px;
+            font-size: 1rem;
+            margin: 10px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1557b0;
+        }
+
+        #alarm-list {
+            list-style: none;
+            padding: 0;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .alarm-item {
+            background: rgba(255, 255, 255, 0.1);
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .alarm-time {
+            font-size: 2rem;
+            font-weight: 300;
+        }
+
+        @media (max-width: 600px) {
+            .side-nav {
+                width: 60px;
+            }
+            
+            .nav-item {
+                padding: 12px 4px;
+            }
+
+            .nav-item i {
+                font-size: 1.5rem;
+            }
+
+            .nav-item span {
+                font-size: 0.6rem;
+            }
+
+            .clock-display {
+                font-size: 3.5rem;
+            }
+        }
+
+        #timer-list {
+            list-style: none;
+            padding: 0;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .timer-item {
+            background: rgba(255, 255, 255, 0.1);
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .timer-display {
+            font-size: 2rem;
+            font-weight: 300;
+        }
+
+        .timer-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .timer-controls button {
+            margin: 0;
+            padding: 8px 16px;
+        }
+
+        .alarm-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
+        }
+
+        .alarm-countdown {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .timer-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
+        }
+
+        .timer-elapsed {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        /* Add transition styles */
+        .view-transition {
+            position: fixed;
+            top: 0;
+            left: 80px;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .view-transition.active {
+            opacity: 1;
+        }
+
+        @media (max-width: 600px) {
+            .view-transition {
+                left: 60px;
+            }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body>
+    <!-- Side Navigation -->
+    <nav class="side-nav">
+        <div class="nav-item active" data-view="clock">
+            <i class="material-icons">schedule</i>
+            <span>Clock</span>
+        </div>
+        <div class="nav-item" data-view="alarm">
+            <i class="material-icons">alarm</i>
+            <span>Alarm</span>
+        </div>
+        <div class="nav-item" data-view="timer">
+            <i class="material-icons">timer</i>
+            <span>Timer</span>
+        </div>
+        <div class="nav-item" data-view="stopwatch">
+            <i class="material-icons">timer</i>
+            <span>Stopwatch</span>
+        </div>
+    </nav>
+
+    <div class="content-area">
+        <!-- Clock View -->
+        <div id="clock-view" class="main-container active">
+            <div class="clock-display" id="current-time"></div>
+        </div>
+
+        <!-- Alarm View -->
+        <div id="alarm-view" class="main-container">
+            <div class="input-container">
+                <input type="time" id="alarm-time">
+                <button onclick="setAlarm()">Add Alarm</button>
+            </div>
+            <ul id="alarm-list"></ul>
+        </div>
+
+        <!-- Timer View -->
+        <div id="timer-view" class="main-container">
+            <div class="input-container">
+                <input type="number" id="timer-hours" placeholder="H" min="0">
+                <input type="number" id="timer-minutes" placeholder="M" min="0" max="59">
+                <input type="number" id="timer-seconds" placeholder="S" min="0" max="59">
+                <button onclick="addTimer()">Add Timer</button>
+            </div>
+            <ul id="timer-list"></ul>
+        </div>
+
+        <!-- Stopwatch View -->
+        <div id="stopwatch-view" class="main-container">
+            <div class="clock-display" id="stopwatch-display">00:00:00</div>
+            <div style="text-align: center;">
+                <button onclick="toggleStopwatch()" id="stopwatch-toggle">Start</button>
+                <button onclick="resetStopwatch()">Reset</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let timerInterval;
+        let alarmTimeout;
+        let stopwatchInterval;
+        let stopwatchTime = 0;
+        let stopwatchRunning = false;
+        let alarms = [];
+        let timers = [];
+        let globalUpdateInterval;
+        let touchStartY = 0;
+        let touchStartX = 0;
+        let isSwiping = false;
+        let lastTouchTime = 0;
+        let lastSwipeTime = 0;
+        let currentViewIndex = 0;
+        const views = ['clock', 'alarm', 'timer', 'stopwatch'];
+
+        // Notification handling
+        function showNotification(title, message) {
+            // Try Android interface first
+            if (window.Android && typeof window.Android.showNotification === 'function') {
+                window.Android.showNotification(title, message);
+            } else {
+                // Fallback to browser notification
+                if (Notification.permission === "granted") {
+                    new Notification(title, { body: message });
+                } else if (Notification.permission !== "denied") {
+                    Notification.requestPermission().then(permission => {
+                        if (permission === "granted") {
+                            new Notification(title, { body: message });
+                        }
+                    });
+                }
+                // Also show an alert as last resort
+                alert(`${title}: ${message}`);
+            }
+        }
+
+        // Clock
+        function updateClock() {
+            const now = new Date();
+            const timeElement = document.getElementById('current-time');
+            if (timeElement) {
+                timeElement.textContent = now.toLocaleTimeString('en-US', {
+                    hour12: false,
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+            }
+        }
+
+        // Timer
+        function formatElapsedTime(startTime) {
+            const now = new Date();
+            const diff = now - startTime;
+            
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            
+            if (hours > 0) {
+                return `${hours}h ${minutes}m ${seconds}s ago`;
+            } else if (minutes > 0) {
+                return `${minutes}m ${seconds}s ago`;
+            } else {
+                return `${seconds}s ago`;
+            }
+        }
+
+        function formatTimeLeft(date) {
+            const now = new Date();
+            let diff = date - now;
+            
+            if (diff < 0) return "Activating...";
+            
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            
+            if (hours > 0) {
+                return `${hours}h ${minutes}m ${seconds}s`;
+            } else if (minutes > 0) {
+                return `${minutes}m ${seconds}s`;
+            } else {
+                return `${seconds}s`;
+            }
+        }
+
+        function startGlobalUpdate() {
+            if (globalUpdateInterval) {
+                clearInterval(globalUpdateInterval);
+            }
+            
+            // Update everything every second
+            globalUpdateInterval = setInterval(() => {
+                // Update timers
+                timers.forEach(timer => {
+                    if (timer.running) {
+                        timer.remainingSeconds--;
+                        if (timer.remainingSeconds <= 0) {
+                            timer.running = false;
+                            showNotification('Timer Complete', 'Your timer has finished!');
+                            removeTimer(timer.id);
+                        }
+                    }
+                });
+                
+                // Update UI
+                updateTimerList();
+                updateAlarmList();
+            }, 1000);
+        }
+
+        function addTimer() {
+            const hours = parseInt(document.getElementById('timer-hours').value) || 0;
+            const minutes = parseInt(document.getElementById('timer-minutes').value) || 0;
+            const seconds = parseInt(document.getElementById('timer-seconds').value) || 0;
+            
+            const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+            
+            if (totalSeconds <= 0) {
+                showNotification('Invalid Time', 'Please enter a valid time');
+                return;
+            }
+
+            const timer = {
+                id: Date.now(),
+                totalSeconds: totalSeconds,
+                remainingSeconds: totalSeconds,
+                running: true,
+                startTime: new Date()
+            };
+
+            timers.push(timer);
+            updateTimerList();
+
+            // Clear inputs
+            document.getElementById('timer-hours').value = '';
+            document.getElementById('timer-minutes').value = '';
+            document.getElementById('timer-seconds').value = '';
+        }
+
+        function toggleTimer(id) {
+            const timer = timers.find(t => t.id === id);
+            if (!timer) return;
+            timer.running = !timer.running;
+            updateTimerList();
+        }
+
+        function removeTimer(id) {
+            const timerIndex = timers.findIndex(t => t.id === id);
+            if (timerIndex !== -1) {
+                timers.splice(timerIndex, 1);
+                updateTimerList();
+            }
+        }
+
+        function formatTime(totalSeconds) {
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        function updateTimerList() {
+            const timerList = document.getElementById('timer-list');
+            timerList.innerHTML = '';
+            
+            timers.forEach(timer => {
+                const li = document.createElement('li');
+                li.className = 'timer-item';
+                li.innerHTML = `
+                    <div class="timer-info">
+                        <span class="timer-display">${formatTime(timer.remainingSeconds)}</span>
+                        <span class="timer-elapsed">${formatElapsedTime(timer.startTime)}</span>
+                    </div>
+                    <div class="timer-controls">
+                        <button onclick="toggleTimer(${timer.id})">${timer.running ? 'Stop' : 'Start'}</button>
+                        <button onclick="removeTimer(${timer.id})">Delete</button>
+                    </div>
+                `;
+                timerList.appendChild(li);
+            });
+        }
+
+        // Alarm
+        function setAlarm() {
+            const alarmTimeInput = document.getElementById('alarm-time').value;
+            if (!alarmTimeInput) {
+                showNotification('Invalid Alarm', 'Please set a valid time.');
+                return;
+            }
+
+            const [hours, minutes] = alarmTimeInput.split(':');
+            const now = new Date();
+            const alarmDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes);
+
+            // If the alarm time is earlier than current time, set it for tomorrow
+            if (alarmDate < now) {
+                alarmDate.setDate(alarmDate.getDate() + 1);
+            }
+
+            const alarm = {
+                id: Date.now(),
+                time: alarmTimeInput,
+                date: alarmDate,
+                timeout: setTimeout(() => {
+                    showNotification('Alarm', 'Time to wake up!');
+                    removeAlarm(alarm.id);
+                }, alarmDate - now)
+            };
+
+            alarms.push(alarm);
+            updateAlarmList();
+            document.getElementById('alarm-time').value = '';
+        }
+
+        function updateAlarmList() {
+            const alarmList = document.getElementById('alarm-list');
+            alarmList.innerHTML = '';
+            
+            alarms.sort((a, b) => a.date - b.date).forEach(alarm => {
+                const li = document.createElement('li');
+                li.className = 'alarm-item';
+                li.innerHTML = `
+                    <div class="alarm-info">
+                        <span class="alarm-time">${alarm.time}</span>
+                        <span class="alarm-countdown">${formatTimeLeft(alarm.date)}</span>
+                    </div>
+                    <button onclick="removeAlarm(${alarm.id})">Delete</button>
+                `;
+                alarmList.appendChild(li);
+            });
+        }
+
+        function removeAlarm(id) {
+            const alarmIndex = alarms.findIndex(alarm => alarm.id === id);
+            if (alarmIndex !== -1) {
+                clearTimeout(alarms[alarmIndex].timeout);
+                alarms.splice(alarmIndex, 1);
+                updateAlarmList();
+            }
+        }
+
+        // Stopwatch
+        function toggleStopwatch() {
+            const button = document.getElementById('stopwatch-toggle');
+            
+            if (stopwatchRunning) {
+                clearInterval(stopwatchInterval);
+                button.textContent = 'Start';
+            } else {
+                const startTime = Date.now() - stopwatchTime;
+                button.textContent = 'Stop';
+                
+                stopwatchInterval = setInterval(() => {
+                    stopwatchTime = Date.now() - startTime;
+                    updateStopwatchDisplay();
+                }, 10); // Update every 10ms for smoother display
+            }
+            
+            stopwatchRunning = !stopwatchRunning;
+        }
+
+        function updateStopwatchDisplay() {
+            const hours = Math.floor(stopwatchTime / 3600000);
+            const minutes = Math.floor((stopwatchTime % 3600000) / 60000);
+            const seconds = Math.floor((stopwatchTime % 60000) / 1000);
+            const milliseconds = Math.floor((stopwatchTime % 1000) / 10);
+            
+            document.getElementById('stopwatch-display').textContent = 
+                `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(milliseconds).padStart(2, '0')}`;
+        }
+
+        function resetStopwatch() {
+            clearInterval(stopwatchInterval);
+            stopwatchTime = 0;
+            stopwatchRunning = false;
+            document.getElementById('stopwatch-display').textContent = "00:00:00.00";
+            document.getElementById('stopwatch-toggle').textContent = 'Start';
+        }
+
+        // Add touch navigation
+        function initializeTouchNavigation() {
+            document.body.addEventListener('touchstart', handleTouchStart, { passive: true });
+            document.body.addEventListener('touchmove', handleTouchMove, { passive: false });
+            document.body.addEventListener('touchend', handleTouchEnd, { passive: true });
+        }
+
+        function handleTouchStart(e) {
+            touchStartY = e.touches[0].clientY;
+            touchStartX = e.touches[0].clientX;
+            isSwiping = false;
+            lastTouchTime = Date.now();
+        }
+
+        function handleTouchMove(e) {
+            const touchY = e.touches[0].clientY;
+            const touchX = e.touches[0].clientX;
+            const deltaY = touchY - touchStartY;
+            const deltaX = touchX - touchStartX;
+            
+            // Check if the movement is more vertical than horizontal
+            if (Math.abs(deltaY) > Math.abs(deltaX) * 1.2) {
+                const currentContainer = document.querySelector('.main-container.active');
+                const isAtTop = currentContainer.scrollTop <= 0;
+                const isAtBottom = currentContainer.scrollTop + currentContainer.clientHeight >= currentContainer.scrollHeight;
+                
+                // Only prevent default if we're at the top or bottom of scrollable content
+                if ((deltaY > 0 && isAtTop) || (deltaY < 0 && isAtBottom)) {
+                    e.preventDefault();
+                    
+                    // Throttle view changes
+                    const now = Date.now();
+                    if (now - lastSwipeTime > 150 && Math.abs(deltaY) > 20) {
+                        if (deltaY > 0 && currentViewIndex > 0) {
+                            // Sliding down - go up in menu
+                            switchToView(currentViewIndex - 1);
+                            lastSwipeTime = now;
+                        } else if (deltaY < 0 && currentViewIndex < views.length - 1) {
+                            // Sliding up - go down in menu
+                            switchToView(currentViewIndex + 1);
+                            lastSwipeTime = now;
+                        }
+                        touchStartY = touchY;
+                    }
+                }
+            }
+        }
+
+        function handleTouchEnd() {
+            isSwiping = false;
+        }
+
+        function switchToView(index) {
+            if (index === currentViewIndex) return;
+            
+            const direction = index > currentViewIndex ? 1 : -1;
+            const oldIndex = currentViewIndex;
+            currentViewIndex = index;
+            
+            // Update navigation
+            document.querySelectorAll('.nav-item').forEach((item, i) => {
+                item.classList.toggle('active', i === index);
+            });
+            
+            // Get views
+            const containers = document.querySelectorAll('.main-container');
+            const oldView = containers[oldIndex];
+            const newView = containers[index];
+            
+            // Remove any existing transition classes
+            containers.forEach(container => {
+                container.classList.remove('previous');
+                container.classList.remove('active');
+                container.style.transform = direction > 0 ? 'translateY(100%)' : 'translateY(-100%)';
+            });
+
+            // Set initial positions
+            oldView.style.transform = direction > 0 ? 'translateY(-100%)' : 'translateY(100%)';
+            newView.style.transform = 'translateY(0)';
+
+            // Force reflow
+            newView.offsetHeight;
+
+            // Add active class to new view
+            newView.classList.add('active');
+            
+            // Clean up old view after transition
+            setTimeout(() => {
+                oldView.style.transform = '';
+            }, 300);
+        }
+
+        // Initialize
+        function initialize() {
+            // Request notification permission early
+            if ("Notification" in window) {
+                Notification.requestPermission();
+            }
+
+            // Start clock updates
+            updateClock();
+            setInterval(updateClock, 1000);
+
+            // Add input validation
+            document.getElementById('timer-hours').addEventListener('input', function() {
+                if (this.value < 0) this.value = 0;
+                if (this.value > 99) this.value = 99;
+                this.value = Math.floor(Number(this.value));
+            });
+
+            document.getElementById('timer-minutes').addEventListener('input', function() {
+                if (this.value < 0) this.value = 0;
+                if (this.value > 59) this.value = 59;
+                this.value = Math.floor(Number(this.value));
+            });
+
+            document.getElementById('timer-seconds').addEventListener('input', function() {
+                if (this.value < 0) this.value = 0;
+                if (this.value > 59) this.value = 59;
+                this.value = Math.floor(Number(this.value));
+            });
+
+            // Reset any existing state
+            resetStopwatch();
+            timers = [];
+            alarms = [];
+            updateTimerList();
+            updateAlarmList();
+
+            // Start global updates
+            startGlobalUpdate();
+
+            // Add click handlers for navigation items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const viewName = item.dataset.view;
+                    const viewIndex = views.indexOf(viewName);
+                    if (viewIndex !== -1) {
+                        switchToView(viewIndex);
+                    }
+                });
+            });
+
+            // Initialize touch navigation
+            initializeTouchNavigation();
+        }
+
+        // Start the app
+        document.addEventListener('DOMContentLoaded', initialize);
+        
+        // Ensure the page is initialized even if DOMContentLoaded has already fired
+        if (document.readyState === 'complete') {
+            initialize();
+        }
+    </script>
+</body>
+</html>
